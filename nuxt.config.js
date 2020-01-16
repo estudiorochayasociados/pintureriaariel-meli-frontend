@@ -66,7 +66,7 @@ export default {
   env: {
     //baseUrl: 'http://localhost:3000',
     //apiUrl: 'http://localhost:8000'
-    baseUrl: 'https://aimar-meli-frontend.herokuapp.com/',
-    apiUrl: 'https://aimar-meli-backend.herokuapp.com/'
+    baseUrl: 'https://aimar-meli-frontend.herokuapp.com',
+    apiUrl: 'https://aimar-meli-backend.herokuapp.com'
   }
 }
