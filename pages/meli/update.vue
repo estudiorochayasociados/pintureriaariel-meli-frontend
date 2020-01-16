@@ -24,15 +24,15 @@
             <tr v-for="response_ in response">
               <td>
                 <div
-                  v-bind:class=" response_.status == 200 ? 'button is-success ' : 'button is-danger ' "
+                  v-bind:class="!response_.error ? 'button is-success ' : 'button is-danger ' "
                 >
-                  <span class v-if="response_.status == 200">APROBADO</span>
+                  <span class v-if="!response_.error">APROBADO</span>
                   <span v-else>NO APROBADO</span>
                 </div>
               </td>
               <td>{{ response_.title }}</td>
               <td>
-                <div v-if="response_.status == 200">
+                <div v-if="!response_.error">
                   <b>Tipo de publicación:</b>
                   {{ response_.type }}
                   <br />
@@ -45,7 +45,7 @@
                   <b>Porcentaje de recargo aplicado:</b>
                   {{ response_.percent }}
                 </div>
-                <div v-else>{{ response_.error.message }}</div>
+                <div v-else><b>ERROR:</b> {{ response_.error.message }}</div>
               </td>
             </tr>
           </tbody>
@@ -57,6 +57,7 @@
 
 <script>
 import axios from "axios";
+
 export default {
   data() {
     return {
@@ -78,8 +79,9 @@ export default {
       });
     });
   },
-  methods: {
+  methods: { 
     updateEach: async function() {
+
       document.getElementById("boton").classList.add("is-loading");
 
       var checkToken = await axios.get(
@@ -94,31 +96,36 @@ export default {
       let percentGoldPro = configMeli.data[0].gold_pro_percent;
       let shipping = configMeli.data[0].shipping;
 
-      await this.$data.products.forEach(async product => {
-        await product.mercadolibre.forEach(async meli => {
-          let percent =
-            meli.type == "gold_especial" ? percentGoldEspecial : percentGoldPro;
+      if(this.products.lenght === 0) {
+        return;
+      } else {
+        await this.products[0].mercadolibre.map(async meli => {
+            let percent =
+              meli.type == "gold_especial" ? percentGoldEspecial : percentGoldPro;
+              await axios
+              .put(
+                process.env.apiUrl + "/mercadolibre/item/" + meli.code,
+                {
+                  item: this.products[0],
+                  shipping: shipping,
+                  percent: percent,
+                  type: meli.type
+                },
+                this.$cookies.get("header-token")
+              )
+              .then(r => {
+                console.log(r);
+                if (r.data.status === 200) {
+                  this.total += 1;
+                }
+                this.response.push(r.data);
+              });
+          });
 
-          const meliPostItem = await axios.put(
-            process.env.apiUrl + "/mercadolibre/item/" + meli.code,
-            {
-              item: product,
-              shipping: shipping,
-              percent: percent,
-              type: meli.type
-            },
-            this.$cookies.get("header-token")
-          );
-          if (meliPostItem.data.status === 200) {
-            this.$data.total += 1;
-          }
-          console.log(meliPostItem);
-          await this.$data.response.push(meliPostItem.data);
-        });
-      });
-
-      document.getElementById("boton").classList.remove("is-loading");
-    }
+          this.products.shift();
+          this.updateEach();
+        }
+    } 
   }
 };
 </script> 
