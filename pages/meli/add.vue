@@ -118,9 +118,7 @@ export default {
         return;
       } else {
            let percent =
-            meli.type == "gold_special"
-              ? this.configMeli.gold_especial_percent
-              : this.configMeli.gold_pro_percent;
+            this.type == "gold_special" ? this.configMeli.gold_especial_percent : this.configMeli.gold_pro_percent;
 
           var checkToken = await axios.get(
             process.env.apiUrl + "/mercadolibre/refresh-token"
