@@ -19,15 +19,17 @@
 
       <div id="navbarBasicExample" class="navbar-menu text-uppercase">
         <div class="navbar-end">
-          <a class="navbar-item fs-14" href="/">Home</a>
+          <a class="navbar-item fs-14" href="/">
+            <i class="material-icons fs-15">home</i>
+          </a>
 
-          <a class="navbar-item fs-14" href="/products">Productos</a>
+          <a class="navbar-item fs-14" href="/products">Actualizar Productos</a>
 
           <div class="navbar-item fs-14 has-dropdown is-hoverable">
             <a class="navbar-link">Mercadolibre</a>
             <div class="navbar-dropdown is-right">
-              <a class="navbar-item fs-14" href="/meli/add">Agregar Productos</a>
-              <a class="navbar-item fs-14" href="/meli/update">Modificar Productos</a>
+              <a class="navbar-item fs-14" href="/meli/add">Agregar Anuncios</a>
+              <a class="navbar-item fs-14" href="/meli/update">Modificar Anuncios</a>
             </div>
           </div>
 

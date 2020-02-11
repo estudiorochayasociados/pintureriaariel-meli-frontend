@@ -45,6 +45,7 @@ export default {
     // Doc: https://github.com/nuxt-community/dotenv-module
     '@nuxtjs/dotenv',
     '@nuxtjs/bulma',
+    'nuxt-material-design-icons',
     'cookie-universal-nuxt'
   ],
   /*
@@ -65,8 +66,9 @@ export default {
   },
   env: {
     // baseUrl: 'http://localhost:3000',
-    // apiUrl: 'http://localhost:8000'
+    // apiUrl: 'http://localhost:8000',
     baseUrl: 'https://pintureriaariel-meli-frontend.herokuapp.com',
-    apiUrl: 'https://pintureriaariel-meli-backend.herokuapp.com'
+    apiUrl: 'https://pintureriaariel-meli-backend.herokuapp.com',
+    product: 'https://www.pintureriasariel.com.ar/curl/products/list-json.php'
   }
 }

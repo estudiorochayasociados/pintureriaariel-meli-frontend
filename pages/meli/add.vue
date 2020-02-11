@@ -1,19 +1,19 @@
 <template>
   <div class="container">
-    <h1 class="title mt-20">Agregar productos a MercadoLibre ({{ products.length }})</h1>
+    <h1 class="title mt-20">Agregar productos a MercadoLibre ({{ productsFinal.length }})</h1>
     <h2
       class="subtitle"
     >Aplicá las configuraciones de publicaciones que te gustaría que tus productos cumplan</h2>
     <hr />
     <div class="columns">
       <div class="column">
-        Agregar características:
+        <span class="fs-14">AGREGAR CARACTERÍSTICAS:</span>
         <br />
         <input class="input" type="text" v-model="tag" />
       </div>
 
       <div class="column">
-        Tipo de publicación:
+        <span class="fs-14">TIPO DE PUBLICACIÓN:</span>
         <br />
         <div class="select is-fullwidth">
           <select v-model="type">
@@ -24,19 +24,27 @@
       </div>
 
       <div class="column">
-        SUBIR PRODUCTOS POR PRIMERA VEZ
+        <span class="fs-14">¿PRODUCTOS POR 1º VEZ?</span>
         <br />
         <div class="select is-fullwidth">
-          <select v-model="all">
-            <option value="true">SI</option>
+          <select v-model.bool="all" @change="changeProducts()">
             <option value="false">NO, SUBIR TODOS</option>
+            <option value="true">SI</option>
           </select>
         </div>
       </div>
 
       <div class="column">
+        <span class="fs-14">ENTREGA EN:</span>
         <br />
-        <button @click="addEach" id="boton" class="button is-primary">SUBIR A MERCADOLIBRE</button>
+        <div class="is-fullwidth">
+          <input type="number" class="input" placeholder="Días" v-model="garanty" />
+        </div>
+      </div>
+
+      <div class="column">
+        <br />
+        <button @click="addEach" id="boton" class="button is-primary" disabled>SUBIR A MERCADOLIBRE</button>
       </div>
     </div>
     <hr />
@@ -93,11 +101,12 @@ export default {
   data() {
     return {
       products: [],
+      productsFinal: [],
       response: [],
       checkToken: [],
       configMeli: [],
-      allStatus: true,
       tag: "",
+      garanty: 0,
       type: "",
       all: "",
       shipping: true,
@@ -111,6 +120,7 @@ export default {
     );
 
     this.products = products.data;
+    this.productsFinal = products.data;
 
     const checkToken = await axios.get(
       process.env.apiUrl + "/mercadolibre/refresh-token"
@@ -122,21 +132,26 @@ export default {
 
     this.checkToken = checkToken.data[0];
     this.configMeli = configMeli.data[0];
+
+    document.getElementById("boton").removeAttribute("disabled");
   },
   methods: {
-    addEach: async function() {
-      document.getElementById("boton").classList.add("is-loading");
-
-      if (this.all && this.allStatus) {
-        this.products.map(async (product, index) => {
-          if (product.mercadolibre.length !== 0) {
-            await this.products.splice(index, 1);
+    changeProducts: async function() {
+      this.productsFinal = JSON.parse(JSON.stringify(this.products));
+      if (this.all !== "false") {
+        var productoFinal = [];
+        this.productsFinal.map(async (product, index) => {
+          if (product.mercadolibre.length === 0) {
+            productoFinal.push(product);
           }
         });
-        this.allStatus = false;
+        this.productsFinal = productoFinal;
       }
-
-      if (this.products.lenght === 0) {
+    },
+    addEach: async function() {
+      document.getElementById("boton").classList.add("is-loading");
+      if (this.productsFinal.length === 0) {
+        document.getElementById("boton").classList.remove("is-loading");
         return;
       } else {
         let percent =
@@ -144,13 +159,15 @@ export default {
             ? this.configMeli.gold_especial_percent
             : this.configMeli.gold_pro_percent;
 
-        this.products[0].title = this.products[0].title + " " + this.tag;
+        this.productsFinal[0].title =
+          this.productsFinal[0].title + " " + this.tag;
         const meliPostItem = await axios.post(
           process.env.apiUrl + "/mercadolibre/item",
           {
-            item: this.products[0],
+            item: this.productsFinal[0],
             shipping: this.configMeli.shipping,
             percent: percent,
+            garanty: this.garanty,
             type: this.type
           },
           this.$cookies.get("header-token")
@@ -159,7 +176,7 @@ export default {
           this.total += 1;
         }
         await this.response.push(meliPostItem.data);
-        this.products.shift();
+        this.productsFinal.shift();
         this.addEach();
       }
     }
