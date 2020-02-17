@@ -6,7 +6,7 @@
     >Aplicá las configuraciones de publicaciones que te gustaría que tus productos cumplan</h2>
     <hr />
     <button
-      @click="updateEach"
+      @click="updateEach(0)"
       id="boton"
       class="button is-success is-fullwidth"
     >MODIFICAR PRODUCTOS A MERCADOLIBRE</button>
@@ -63,8 +63,10 @@ export default {
   data() {
     return {
       products: [],
+      prepareArray: [],
       response: [],
       checkToken: [],
+      estado: false,
       configMeli: [],
       total: 0,
       meliTotal: 0
@@ -87,48 +89,62 @@ export default {
     this.checkToken = checkToken.data[0];
     this.configMeli = configMeli.data[0];
     this.products = products.data;
-
-    await this.$data.products.forEach(async product => {
-      await product.mercadolibre.forEach(async meli => {
-        this.meliTotal += 1;
-      });
-    });
+    await this.prepareArrayProducts();
   },
   methods: {
-    updateEach: async function() {
-      document.getElementById("boton").classList.add("is-loading");
-      if (this.products.lenght === 0) {
-        document.getElementById("boton").classList.remove("is-loading");
-        return;
-      } else {
-        await this.products[0].mercadolibre.map(async meli => {
-          let percent =
-            meli.type == "gold_special"
-              ? this.configMeli.gold_especial_percent
-              : this.configMeli.gold_pro_percent;
-          await axios
-            .put(
-              process.env.apiUrl + "/mercadolibre/item/" + meli.code,
-              {
-                item: this.products[0],
-                shipping: this.configMeli.shipping,
-                percent: percent,
-                type: meli.type
-              },
-              this.$cookies.get("header-token")
-            )
-            .then(r => {
-              console.log(r);
-              if (r.data.status === 200) {
-                this.total += 1;
-              }
-              this.response.push(r.data);
-            });
-        });
-
-        this.products.shift();
-        this.updateEach();
+    prepareArrayProducts: async function() {
+      this.products.forEach(product => {
+        if (product.mercadolibre.length != 0) {
+          const arrayProduct = [];
+          arrayProduct.push(product);
+          product.mercadolibre.forEach(meli => {
+            this.meliTotal++;
+            let percent =
+              meli.type == "gold_special"
+                ? this.configMeli.gold_especial_percent
+                : this.configMeli.gold_pro_percent;
+            arrayProduct.push(meli.code);
+            arrayProduct.push(meli.type);
+            arrayProduct.push(percent);
+          });
+          this.prepareArray.push(arrayProduct);
+        }
+      });
+    },
+    updateEach: async function(init) {
+      var count = Math.round(this.prepareArray.length / 50);
+      //await this.forFinal(init, init + count);
+      console.log(init + " | " + init + count);
+      this.updateEach(count + init);
+    },
+    forFinal: async function(inicio, fin) {
+      for (var i = inicio; i < fin; i++) {
+        if (this.prepareArray[i].length != 0) {
+          this.putMercadolibre(
+            this.prepareArray[i][0],
+            this.prepareArray[i][1],
+            this.prepareArray[i][2],
+            this.prepareArray[i][3]
+          ).then(r => {
+            if (r.data.status === 200) {
+              this.total += 1;
+            }
+            this.response.push(r.data);
+          });
+        }
       }
+    },
+    putMercadolibre: function(product, meliCode, type, percent) {
+      return axios.put(
+        process.env.apiUrl + "/mercadolibre/item/" + meliCode,
+        {
+          item: product,
+          shipping: this.configMeli.shipping,
+          percent: percent,
+          type: type
+        },
+        this.$cookies.get("header-token")
+      );
     }
   }
 };
