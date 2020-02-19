@@ -1,17 +1,29 @@
 <template>
   <div class="container">
-    <h1 class="title mt-20">Actualizar productos de MercadoLibre ({{ meliTotal }})</h1>
+    <h1 class="title mt-20">Actualizar productos de MercadoLibre ({{ prepareArray.length }})</h1>
     <h2
       class="subtitle"
     >Aplicá las configuraciones de publicaciones que te gustaría que tus productos cumplan</h2>
+    <p>
+      Deseo que mis anuncios se actualicen de a tandas de:
+      <input
+        type="number"
+        id="count"
+        v-model.number="count"
+      />
+    </p>
     <hr />
+    <div v-if="total != 0">
+      <progress class="progress is-warning" :value="total" :max="prepareArray.length">{{ total }}</progress>
+      <hr />
+    </div>
     <button
       @click="updateEach(0)"
       id="boton"
+      :disabled="count == 0 || count > 500"
       class="button is-success is-fullwidth"
     >MODIFICAR PRODUCTOS A MERCADOLIBRE</button>
     <hr />
-    Resultado ({{ total }})
     <div class="row">
       <div class="col-md-12">
         <table class="table is-narrow is-hoverable is-fullwidth">
@@ -65,10 +77,12 @@ export default {
       products: [],
       prepareArray: [],
       response: [],
+      count: 0,
       checkToken: [],
       estado: false,
       configMeli: [],
       total: 0,
+      loop: true,
       meliTotal: 0
     };
   },
@@ -112,26 +126,48 @@ export default {
       });
     },
     updateEach: async function(init) {
-      var count = Math.round(this.prepareArray.length / 50);
-      //await this.forFinal(init, init + count);
-      console.log(init + " | " + init + count);
-      this.updateEach(count + init);
+      document.getElementById("count").setAttribute("disabled", "");
+      document.getElementById("boton").setAttribute("disabled", "");
+      Number(init);
+      const total = Number(init + this.count);
+      console.log(init + " | " + total);
+      setTimeout(async () => {
+        if (this.loop) {
+          await this.forFinal(init, total);
+          this.updateEach(total);
+        }
+      }, 1000);
     },
     forFinal: async function(inicio, fin) {
       for (var i = inicio; i < fin; i++) {
-        if (this.prepareArray[i].length != 0) {
+        if (i == this.prepareArray.length) {
+          this.loop = false;
+          break;
+        }
+        var status = await axios.get(
+          "https://api.mercadolibre.com/items/" + this.prepareArray[i][1]
+        );
+        if (
+          status.data.status != "paused" &&
+          this.prepareArray[i][0].stock != 0
+        ) {
           this.putMercadolibre(
             this.prepareArray[i][0],
             this.prepareArray[i][1],
             this.prepareArray[i][2],
             this.prepareArray[i][3]
           ).then(r => {
-            if (r.data.status === 200) {
-              this.total += 1;
-            }
             this.response.push(r.data);
           });
+        } else {
+          this.response.push({
+            title: this.prepareArray[i][0].title,
+            error: { message: "Pausado y sin stock" }
+          });
         }
+        this.total++;
+        console.log(this.loop);
+        console.log(i);
       }
     },
     putMercadolibre: function(product, meliCode, type, percent) {

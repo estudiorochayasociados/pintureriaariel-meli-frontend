@@ -2,12 +2,24 @@
   <div class="container">
     <h1 class="title mt-20">Actualizar Productos ({{ webProduct.length }})</h1>
     <h2 class="subtitle">Actualizar los productos de tu desarrollo web a nuestra plataforma</h2>
+    <p>
+      Deseo que mis productos se actualicen de a tandas de:
+      <input
+        type="number"
+        id="count"
+        v-model.number="count"
+      />
+    </p>
     <hr />
+    <div v-if="total != 0">
+      <progress class="progress is-warning" :value="total" :max="webProduct.length">{{ total }}</progress>
+      <hr />
+    </div>
     <button
-      @click="updateProducts"
+      @click="updateProducts(0)"
       id="boton"
       class="button is-success is-fullwidth"
-      disabled
+      :disabled="count == 0 || count > 500 || webProduct.length == 0"
     >{{ textButton }}</button>
     <hr />
     <table class="table is-fullwidth mt-20">
@@ -44,6 +56,8 @@ export default {
     return {
       products: [],
       webProduct: [],
+      total: 0,
+      count: 0,
       responseWebProduct: [],
       textButton: "CARGANDO PRODUCTOS DESDE LA WEB..."
     };
@@ -60,24 +74,37 @@ export default {
       var element = document.getElementById(id);
       element.classList.add("d-block");
     },
-    updateProducts: async function() {
-      document.getElementById("boton").setAttribute("disabled", "true");
-      document.getElementById("boton").classList.add("is-loading");
-      const postProduct = await axios.post(
+    updateProducts: async function(init) {
+      Number(init);
+      Number(this.count);
+      const total = init + this.count;
+      console.log(init + " | " + total);
+      setTimeout(async () => {
+        await this.forFinal(init, total);
+        this.updateProducts(total);
+      }, 1000);
+    },
+    forFinal: async function(inicio, fin) {
+      for (var i = inicio; i < fin; i++) {
+        if (Object.keys(this.webProduct[i]).length != 0) {
+          this.postProduct(this.webProduct[i]).then(r => {
+            if (r.data.status === 200) {
+              this.total++;
+            }
+            this.responseWebProduct.push(r.data);
+          });
+          console.log(i);
+        }
+      }
+    },
+    postProduct: async function(product) {
+      return axios.post(
         process.env.apiUrl + "/product/update-web",
         {
-          item: this.webProduct[0]
+          item: product
         },
         this.$cookies.get("header-token")
       );
-      this.responseWebProduct.push(postProduct.data);
-      this.webProduct.shift();
-      this.updateProducts();
-      if (this.webProduct.length == 0) {
-        this.textButton = "ACTUALIZAR PRODUCTOS HACIENDO CLICK";
-        document.getElementById("boton").removeAttribute("disabled");
-        document.getElementById("boton").classList.remove("is-loading");
-      }
     }
   }
 };
